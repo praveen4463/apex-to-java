@@ -13,7 +13,7 @@ classDec
   ;
 
 block
-  : LBRACE (statement | classDec | constructor)* RBRACE
+  : LBRACE (statement | innerClass=classDec | constructor)* RBRACE
   ;
 
 statement
@@ -22,6 +22,7 @@ statement
   | funcDec
   | functionInvocation
   | returnStm
+  | COMMENT
   ;
 
 assignment
