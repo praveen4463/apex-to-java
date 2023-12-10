@@ -5,7 +5,11 @@ options {
 }
 
 compilationUnit
-  : COMMENT* classDec EOF
+  : comment* classDec comment* EOF
+  ;
+
+comment
+  : COMMENT
   ;
 
 classDec
@@ -13,7 +17,15 @@ classDec
   ;
 
 block
-  : LBRACE (statement | innerClass=classDec | constructor)* RBRACE
+  : blockStart (statement | classDec | constructor | comment)* blockEnd
+  ;
+
+blockStart
+  : LBRACE
+  ;
+
+blockEnd
+  : RBRACE
   ;
 
 statement
@@ -22,7 +34,6 @@ statement
   | funcDec
   | functionInvocation
   | returnStm
-  | COMMENT
   ;
 
 assignment
@@ -34,11 +45,18 @@ returnStm
   ;
 
 listType
-  : LIST LT Types GT
+  : LIST LT types GT
   ;
 
 mapType
-  : MAP LT Types COMMA Types GT
+  : MAP LT types COMMA types GT
+  ;
+
+types
+  : STRING
+  | INTEGER
+  | SOBJECT
+  | DOUBLE
   ;
 
 listOfMapsType
@@ -53,7 +71,7 @@ typeDec
   : mapType
   | listType
   | listOfMapsType
-  | Types
+  | types
   ;
 
 constructor

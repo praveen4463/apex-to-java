@@ -27,16 +27,13 @@ COLON : ':';
 GT : '>';
 LT : '<';
 
-// Generic types
+// Types
 LIST : 'List';
 MAP : 'Map';
-
-Types
-  : 'String'
-  | 'Integer'
-  | 'Sobject'
-  | 'Double'
-  ;
+STRING : 'String';
+INTEGER : 'Integer';
+SOBJECT : 'Sobject';
+DOUBLE : 'Double';
 
 NumberLiteral
   : Integer ( DOT DIGIT+ )?
