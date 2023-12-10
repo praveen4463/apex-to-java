@@ -13,7 +13,23 @@ classDec
   ;
 
 block
-  : LBRACE (statement | classDec)* RBRACE
+  : LBRACE (statement | classDec | constructor)* RBRACE
+  ;
+
+statement
+  : varDec
+  | assignment
+  | funcDec
+  | functionInvocation
+  | returnStm
+  ;
+
+assignment
+  : typeDec? Identifier ASSIGN expression SEMICOLON
+  ;
+
+returnStm
+  : RETURN expression SEMICOLON
   ;
 
 listType
@@ -24,19 +40,52 @@ mapType
   : MAP LT Types COMMA Types GT
   ;
 
+listOfMapsType
+  : LIST LT mapType GT
+  ;
+
 getterSetter
-  : LBRACE GET COMMA SET COMMA RBRACE
+  : LBRACE GET SEMICOLON SET SEMICOLON RBRACE
   ;
 
 typeDec
   : mapType
   | listType
+  | listOfMapsType
   | Types
   ;
 
-constructuer
-  : GLOBAL? Identifier LPAREN
+constructor
+  : GLOBAL? Identifier argsList block
+  ;
+
+funcDec
+  : GLOBAL? typeDec Identifier argsList block
+  ;
 
 argsList
-  : LPAREN typeDec Identifier ( COMMA typeDec Identifier )*
+  : LPAREN ( typeDec Identifier ( COMMA typeDec Identifier )* )? RPAREN
+  ;
+
+functionInvocation
+  : ( Identifier DOT )? Identifier LPAREN expressionList? RPAREN SEMICOLON
+  ;
+
+varDec
+  : GLOBAL? typeDec Identifier getterSetter
+  | GLOBAL? typeDec Identifier SEMICOLON
+  ;
+
+expression
+  : expression ADD expression                           #addExpression
+  | NumberLiteral                                       #numberExpression
+  | StringLiteral                                       #stringExpression
+  | functionInvocation                                  #functionInvocationExpression
+  | NEW (listType | mapType) LPAREN RPAREN              #typeInitializerExpression
+  | SOQL                                                #soqlExpression
+  | Identifier                                          #identifierExpression
+  ;
+
+expressionList
+  : expression ( COMMA expression )*
   ;

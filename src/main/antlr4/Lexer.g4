@@ -6,6 +6,7 @@ CLASS : 'class';
 GET : 'get';
 SET : 'set';
 RETURN : 'return';
+NEW : 'new';
 
 // Separators
 LBRACE : '{';
@@ -77,6 +78,10 @@ Identifier
 
 COMMENT
   : '/*' .*? '*/'
+  ;
+
+SOQL
+  : '[' .*? ']'
   ;
 
 // Ignore whitespace
