@@ -1,0 +1,8 @@
+target/
+gen/
+*settings.xml
+*.iml
+*.idea
+*.jar
+
+.DS_Store

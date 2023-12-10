@@ -1,0 +1,11 @@
+
+# Apex to Java
+
+1. After changes to grammar files, use `mvn antlr4:antlr4` to generate Parser
+   and Lexer code.
+2. Parser and Lexer are generated under /target and inferred into classpath from
+   there, no need to copy them anywhere else.
+3. If you see wierd errors in terminal but no problem with the files, try following:
+      - Run `mvn antlr4:antlr4` to generate antlr stuff again.
+      - Rebuild project
+      - maven install
