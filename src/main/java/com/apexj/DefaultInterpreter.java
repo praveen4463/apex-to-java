@@ -129,13 +129,15 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
     String capitalizedVarId = varId.substring(0, 1).toUpperCase() + varId.substring(1);
     String genCode = String.format("private %1$s %2$s;", type, varId) +
         "\n\n" +
-        String.format("public String get%1$s() {return %2$s;}",
+        String.format("public %3$s get%1$s() {return %2$s;}",
             capitalizedVarId,
-            varId) +
+            varId,
+            type) +
         "\n\n" +
-        String.format("public void set%1$s(String %2$s) {this.%2$s = %2$s;}",
+        String.format("public void set%1$s(%3$s %2$s) {this.%2$s = %2$s;}",
             capitalizedVarId,
-            varId);
+            varId,
+            type);
     genParts.add(genCode);
     return null;
   }
