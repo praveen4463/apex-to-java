@@ -1,6 +1,5 @@
 package com.apexj;
 
-import com.apexj.antlr4.AJLexer;
 import com.apexj.antlr4.AJParserBaseVisitor;
 import com.apexj.antlr4.AJParser;
 
