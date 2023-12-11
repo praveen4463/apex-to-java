@@ -12,9 +12,9 @@ public class SampleTests {
   @Tag("complex-type1")
   @Test
   void complexType1() throws IOException {
-    //Paths.get("resources/complex-type1.apex")
-    API api = new API(Paths.get("resources/complex-type1.apex"), StandardCharsets.UTF_8);
+    String homeDir = System.getProperty("user.home");
+    API api = new API(Paths.get(homeDir + "/complex-type1.apex"), StandardCharsets.UTF_8);
     String javaCode = api.interpret();
-    Files.writeString(Paths.get("resources/complex-type1.java"), javaCode, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    Files.writeString(Paths.get(homeDir + "/complex-type1.java"), javaCode, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
   }
 }
