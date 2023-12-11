@@ -193,7 +193,7 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
     } else {
       type = visit(ctx.mapType());
     }
-    return String.format("new %1$s();", type);
+    return String.format("new %1$s()", type);
   }
   
   @Override
@@ -229,7 +229,9 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   
   @Override
   public String visitReturnStm(AJParser.ReturnStmContext ctx) {
-    return "return " + visit(ctx.expression()) + ";";
+    String soqlNormalized = visit(ctx.expression()).replaceAll("\n", "");
+    genParts.add(String.format("return \"%1$s\";", soqlNormalized));
+    return null;
   }
   
   @Override
@@ -240,5 +242,10 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   @Override
   public String visitStringExpression(AJParser.StringExpressionContext ctx) {
     return String.format("\"%1$s\"", ctx.getText().substring(1, ctx.getText().length() - 2));
+  }
+  
+  @Override
+  public String visitIdentifierExpression(AJParser.IdentifierExpressionContext ctx) {
+    return ctx.getText();
   }
 }

@@ -25,6 +25,16 @@ public String getRuleItems() {return ruleItems;}
 public void setRuleItems(String ruleItems) {this.ruleItems = ruleItems;}
   private List<Map<String, Object>> expensePayload;
   public TerritoryGridController() {
-  territoryId = null;
+  territoryId = "ShippingPostalCod";
+}
+class YearlyExpense {
+  Double yearlyExpense = 0.0;
+  Double yearlyHonorarium = 0.0;
+}
+public List<String> getTerritory2ModelList(String value) {
+  System.debug('Input: '+value);
+  ruleItems = new List<String>();
+  ruleItems.add(value);
+  return "SELECT Id, Name, DeveloperName, Description,               (SELECT Id, Name, Planning__c, Go_Live_Date__c                FROM Territory2s)                FROM Territory2Mode";
 }
 }
