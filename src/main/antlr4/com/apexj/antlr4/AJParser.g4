@@ -1,7 +1,7 @@
-parser grammar Parser;
+parser grammar AJParser;
 
 options {
-  tokenVocab=Lexer;
+  tokenVocab=AJLexer;
 }
 
 compilationUnit
@@ -63,10 +63,6 @@ listOfMapsType
   : LIST LT mapType GT
   ;
 
-getterSetter
-  : LBRACE GET SEMICOLON SET SEMICOLON RBRACE
-  ;
-
 typeDec
   : mapType
   | listType
@@ -91,8 +87,8 @@ functionInvocation
   ;
 
 varDec
-  : GLOBAL? typeDec Identifier getterSetter
-  | GLOBAL? typeDec Identifier SEMICOLON
+  : GLOBAL typeDec Identifier LBRACE GET SEMICOLON SET SEMICOLON RBRACE #getterSetterVarDec
+  | typeDec Identifier SEMICOLON                                 #privateVarDec
   ;
 
 expression
