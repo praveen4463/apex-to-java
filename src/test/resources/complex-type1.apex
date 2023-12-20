@@ -21,7 +21,7 @@ global class TerritoryGridController
         Double yearlyHonorarium = 0.0;
     }
 
-     global List<String> getTerritory2ModelList(String value)
+    global List<String> getTerritory2ModelList(String value)
     {
         System.debug('Input: ' + value);
          ruleItems = new List<String>();
