@@ -9,12 +9,12 @@ import java.nio.file.*;
 
 public class SampleTests {
   
-  @Tag("complex-type1")
+  @Tag("complex-type2")
   @Test
-  void complexType1() throws IOException {
+  void complexType2() throws IOException {
     String homeDir = System.getProperty("user.home");
-    API api = new API(Paths.get(homeDir + "/complex-type1.apex"), StandardCharsets.UTF_8);
+    API api = new API(Paths.get(homeDir + "/complex-type2.apex"), StandardCharsets.UTF_8);
     String javaCode = api.interpret();
-    Files.writeString(Paths.get(homeDir + "/complex-type1.java"), javaCode, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+    Files.writeString(Paths.get(homeDir + "/complex-type2.java"), javaCode, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
   }
 }

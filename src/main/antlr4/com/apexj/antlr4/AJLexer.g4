@@ -1,12 +1,21 @@
 lexer grammar AJLexer;
 
 // Keywords
-GLOBAL : 'global';
+GLOBAL
+  : 'global'
+  | 'public'
+  ;
+PRIVATE : 'private';
 CLASS : 'class';
 GET : 'get';
 SET : 'set';
 RETURN : 'return';
 NEW : 'new';
+IMPLEMENTS : 'implements';
+EXTENDS : 'extends';
+VOID : 'void';
+STATIC : 'static';
+FINAL : 'final';
 
 // Separators
 LBRACE : '{';
@@ -26,14 +35,28 @@ ADD : '+';
 COLON : ':';
 GT : '>';
 LT : '<';
+MAP_KEY_VALUE_OP : '=>';
 
 // Types
 LIST : 'List';
+SET_TYPE : 'Set';
 MAP : 'Map';
-STRING : 'String';
+STRING
+  : 'string'
+  | 'String'
+  ;
 INTEGER : 'Integer';
-SOBJECT : 'Sobject';
+SOBJECT
+  : 'Sobject'
+  | 'SObject'
+  ;
 DOUBLE : 'Double';
+BOOLEAN
+  : 'boolean'
+  | 'Boolean'
+  ;
+DATE: 'Date';
+ENUM: 'enum';
 
 NumberLiteral
   : Integer ( DOT DIGIT+ )?
@@ -75,10 +98,7 @@ Identifier
 
 COMMENT
   : '/*' .*? '*/'
-  ;
-
-SOQL
-  : '[' .*? ']'
+  | '//' ~[\r\n]*
   ;
 
 // Ignore whitespace

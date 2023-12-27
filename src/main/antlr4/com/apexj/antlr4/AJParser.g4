@@ -12,8 +12,21 @@ comment
   : COMMENT
   ;
 
+indexes
+  : ( LBRAC expression RBRAC )+
+  ;
+
+identifierExpr
+  : Identifier indexes? ( DOT identifierExpr )?
+  ;
+
+inheritedType
+  : Identifier (DOT Identifier)* (LT primitivetypes GT)?
+  ;
+
 classDec
-  : GLOBAL? CLASS Identifier block
+  : GLOBAL? CLASS Identifier (EXTENDS inheritedType)?
+      ( IMPLEMENTS inheritedType (COMMA inheritedType)* )? block
   ;
 
 block
@@ -34,10 +47,19 @@ statement
   | funcDec
   | functionInvocation
   | returnStm
+  | enumDec
+  ;
+
+casting
+  : LPAREN typeDec RPAREN
   ;
 
 assignment
-  : typeDec? Identifier ASSIGN expression SEMICOLON
+  : typeDec? Identifier (DOT Identifier)* ASSIGN casting? expression SEMICOLON?
+  ;
+
+enumDec
+  : GLOBAL? ENUM Identifier blockStart Identifier (COMMA Identifier)* blockEnd
   ;
 
 returnStm
@@ -45,60 +67,105 @@ returnStm
   ;
 
 listType
-  : LIST LT types GT
+  : LIST LT typeDec GT
+  ;
+
+setType
+  : SET_TYPE LT typeDec GT
   ;
 
 mapType
-  : MAP LT types COMMA types GT
+  : MAP LT typeDec COMMA typeDec GT
   ;
 
-types
+primitivetypes
   : STRING
   | INTEGER
   | SOBJECT
   | DOUBLE
+  | BOOLEAN
+  ;
+
+buildInTypes
+  : DATE
   ;
 
 listOfMapsType
   : LIST LT mapType GT
   ;
 
+customTypes
+  : Identifier
+  ;
+
 typeDec
   : mapType
   | listType
+  | setType
   | listOfMapsType
-  | types
+  | primitivetypes
+  | buildInTypes
+  | customTypes
+  ;
+
+builtIntypesAllowingMethodInvocation
+  : MAP
+  | DATE
+  | STRING
   ;
 
 constructor
   : GLOBAL? Identifier argsList block
   ;
 
+returnType
+  : VOID
+  | typeDec
+  | Identifier (DOT Identifier)+
+  ;
+
 funcDec
-  : GLOBAL? typeDec Identifier argsList block
+  : GLOBAL? returnType Identifier argsList block
   ;
 
 argsList
-  : LPAREN ( typeDec Identifier ( COMMA typeDec Identifier )* )? RPAREN
+  : LPAREN ( returnType Identifier ( COMMA returnType Identifier )* )? RPAREN
+  ;
+
+functionInvocationConstruct
+  : Identifier LPAREN expressionList? RPAREN indexes? ( DOT identifierExpr )?
   ;
 
 functionInvocation
-  : ( Identifier DOT )? Identifier LPAREN expressionList? RPAREN SEMICOLON
+  : ( (Identifier | builtIntypesAllowingMethodInvocation) DOT )* functionInvocationConstruct SEMICOLON?
   ;
 
 varDec
-  : GLOBAL typeDec Identifier LBRACE GET SEMICOLON SET SEMICOLON RBRACE #getterSetterVarDec
-  | typeDec Identifier SEMICOLON                                 #privateVarDec
+  : GLOBAL typeDec Identifier LBRACE GET SEMICOLON SET SEMICOLON RBRACE              #getterSetterVarDec
+  | (GLOBAL | PRIVATE) FINAL? typeDec Identifier SEMICOLON                           #directVarDec
+  | (GLOBAL | PRIVATE) STATIC? FINAL? typeDec Identifier ASSIGN expression SEMICOLON #varDecWithInitilization
+  ;
+
+generalTypeInitializerExpression
+  : NEW (listType | mapType | setType | customTypes) LPAREN expressionList? RPAREN
+  ;
+
+soql
+  : LBRAC .*? RBRAC
   ;
 
 expression
-  : expression ADD expression                           #addExpression
-  | NumberLiteral                                       #numberExpression
-  | StringLiteral                                       #stringExpression
-  | functionInvocation                                  #functionInvocationExpression
-  | NEW (listType | mapType) LPAREN RPAREN              #typeInitializerExpression
-  | SOQL                                                #soqlExpression
-  | Identifier                                          #identifierExpression
+  : expression ADD expression                                                               #addExpression
+  | NumberLiteral                                                                           #numberExpression
+  | StringLiteral                                                                           #stringExpression
+  | functionInvocation                                                                      #functionInvocationExpression
+  | generalTypeInitializerExpression                                                        #generalTypeInitializerExpressionLabel
+  | generalTypeInitializerExpression (DOT functionInvocationConstruct)+                     #generalTypeInitializerAndMethodCallExpression
+  | NEW (listType | setType) blockStart expression (COMMA expression)* blockEnd             #listTypeInitializePopulateExpression
+  | NEW mapType blockStart expression MAP_KEY_VALUE_OP expression
+      (COMMA expression MAP_KEY_VALUE_OP expression)* blockEnd                              #mapTypeInitializePopulateExpression
+  | identifierExpr                                                                          #identifierExpression
+  | soql                                                                                    #soqlExpression
   ;
 
 expressionList
