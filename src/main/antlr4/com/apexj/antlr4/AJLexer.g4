@@ -7,8 +7,8 @@ GLOBAL
   ;
 PRIVATE : 'private';
 CLASS : 'class';
-GET : 'get';
-SET : 'set';
+GET : 'get;';
+SET : 'set;';
 RETURN : 'return';
 NEW : 'new';
 IMPLEMENTS : 'implements';
@@ -16,6 +16,18 @@ EXTENDS : 'extends';
 VOID : 'void';
 STATIC : 'static';
 FINAL : 'final';
+IF : 'if';
+ELSE : 'else';
+FOR : 'for';
+TRY : 'try';
+CATCH : 'catch';
+FINALLY : 'finally';
+UPDATE : 'update';
+INSERT : 'insert';
+INHERITED : 'inherited';
+SHARING : 'sharing';
+WITHOUT : 'without';
+WITH : 'with';
 
 // Separators
 LBRACE : '{';
@@ -28,17 +40,34 @@ COMMA : ',';
 DOT : '.';
 SINGLE_QUOTE : '\'';
 SEMICOLON : ';';
+AT : '@';
+COLON : ':';
 
 // Operators
 ASSIGN : '=';
 ADD : '+';
-COLON : ':';
 GT : '>';
 LT : '<';
 MAP_KEY_VALUE_OP : '=>';
+BANG : '!';
+EQUAL : '==';
+LE : '<=';
+GE : '>=';
+NOTEQUAL : '!=';
+AND : '&&';
+OR : '||';
+INC : '++';
+DEC : '--';
+SUB : '-';
+MUL : '*';
+DIV : '/';
+MOD : '%';
 
 // Types
-LIST : 'List';
+LIST
+  : 'List'
+  | 'list'
+  ;
 SET_TYPE : 'Set';
 MAP : 'Map';
 STRING

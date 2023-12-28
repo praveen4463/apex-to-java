@@ -25,7 +25,7 @@ inheritedType
   ;
 
 classDec
-  : GLOBAL? CLASS Identifier (EXTENDS inheritedType)?
+  : GLOBAL? ((INHERITED | WITHOUT | WITH) SHARING)? STATIC? CLASS Identifier (EXTENDS inheritedType)?
       ( IMPLEMENTS inheritedType (COMMA inheritedType)* )? block
   ;
 
@@ -48,14 +48,75 @@ statement
   | functionInvocation
   | returnStm
   | enumDec
+  | tryStatement
+  | ifStatement
+  | forListStatement
+  | increment
+  | decrement
+  | annotation
+  ;
+
+annotation
+  : AT Identifier (LPAREN statement RPAREN)?
+  ;
+
+increment
+  : identifierExpr INC
+  ;
+
+decrement
+  : identifierExpr DEC
+  ;
+
+tryStatement
+  : TRY blockOrStatement catchBlock
+  | TRY blockOrStatement finallyBlock
+  | TRY blockOrStatement catchBlock finallyBlock
+  ;
+
+catchBlock
+  : CATCH argsList? blockOrStatement
+  ;
+
+finallyBlock
+  : FINALLY blockOrStatement
+  ;
+
+ifStatement
+  : ifBlock elseIfBlock* elseBlock?
+  ;
+
+ifBlock
+  : IF LPAREN expression RPAREN blockOrStatement
+  ;
+
+elseIfBlock
+  : ELSE IF LPAREN expression RPAREN blockOrStatement
+  ;
+
+elseBlock
+  : ELSE blockOrStatement
+  ;
+
+forListStatement
+  : FOR LPAREN assignmentLS COLON expression RPAREN blockOrStatement
+  ;
+
+blockOrStatement
+  : block
+  | statement
   ;
 
 casting
   : LPAREN typeDec RPAREN
   ;
 
+assignmentLS
+  : returnType? identifierExpr
+  ;
+
 assignment
-  : typeDec? Identifier (DOT Identifier)* ASSIGN casting? expression SEMICOLON?
+  : assignmentLS ADD? ASSIGN casting? expression SEMICOLON?
   ;
 
 enumDec
@@ -64,6 +125,7 @@ enumDec
 
 returnStm
   : RETURN expression SEMICOLON
+  | (UPDATE | INSERT) expression SEMICOLON
   ;
 
 listType
@@ -96,6 +158,7 @@ listOfMapsType
 
 customTypes
   : Identifier
+  | Identifier (DOT Identifier)+
   ;
 
 typeDec
@@ -121,11 +184,10 @@ constructor
 returnType
   : VOID
   | typeDec
-  | Identifier (DOT Identifier)+
   ;
 
 funcDec
-  : GLOBAL? returnType Identifier argsList block
+  : (GLOBAL | PRIVATE)? STATIC? returnType Identifier argsList block
   ;
 
 argsList
@@ -133,7 +195,8 @@ argsList
   ;
 
 functionInvocationConstruct
-  : Identifier LPAREN expressionList? RPAREN indexes? ( DOT identifierExpr )?
+  : Identifier LPAREN expressionList? RPAREN indexes?
+      (DOT Identifier LPAREN expressionList? RPAREN indexes?)* ( DOT identifierExpr )?
   ;
 
 functionInvocation
@@ -141,7 +204,7 @@ functionInvocation
   ;
 
 varDec
-  : GLOBAL typeDec Identifier LBRACE GET SEMICOLON SET SEMICOLON RBRACE              #getterSetterVarDec
+  : GLOBAL typeDec Identifier LBRACE GET SET RBRACE              #getterSetterVarDec
   | (GLOBAL | PRIVATE) FINAL? typeDec Identifier SEMICOLON                           #directVarDec
   | (GLOBAL | PRIVATE) STATIC? FINAL? typeDec Identifier ASSIGN expression SEMICOLON #varDecWithInitilization
   ;
@@ -155,7 +218,15 @@ soql
   ;
 
 expression
-  : expression ADD expression                                                               #addExpression
+  : SUB expression                                                                          #unaryMinusExpression
+  | BANG expression                                                                         #notExpression
+  | increment                                                                               #incrementExpression
+  | decrement                                                                               #decrementExpression
+  | expression op=( MUL | DIV | MOD | ADD | SUB ) expression                                #arithExpression
+  | expression op=( GE | LE | GT | LT ) expression                                          #compExpression
+  | expression op=( EQUAL | NOTEQUAL ) expression                                           #eqExpression
+  | expression AND expression                                                               #andExpression
+  | expression OR expression                                                                #orExpression
   | NumberLiteral                                                                           #numberExpression
   | StringLiteral                                                                           #stringExpression
   | functionInvocation                                                                      #functionInvocationExpression
@@ -164,6 +235,8 @@ expression
   | NEW (listType | setType) blockStart expression (COMMA expression)* blockEnd             #listTypeInitializePopulateExpression
   | NEW mapType blockStart expression MAP_KEY_VALUE_OP expression
       (COMMA expression MAP_KEY_VALUE_OP expression)* blockEnd                              #mapTypeInitializePopulateExpression
+  | NEW (primitivetypes | buildInTypes | customTypes) LBRAC RBRAC
+      blockStart expression (COMMA expression)* blockEnd                                    #arrayTypeInitializePopulateExpression
   | identifierExpr                                                                          #identifierExpression
   | soql                                                                                    #soqlExpression
   ;
