@@ -21,11 +21,11 @@ identifierExpr
   ;
 
 inheritedType
-  : Identifier (DOT Identifier)* (LT primitivetypes GT)?
+  : Identifier (DOT Identifier)* (LT typeDec GT)?
   ;
 
 classDec
-  : GLOBAL? ((INHERITED | WITHOUT | WITH) SHARING)? STATIC? CLASS Identifier (EXTENDS inheritedType)?
+  : GLOBAL? (shareType=(INHERITED | WITHOUT | WITH) SHARING)? STATIC? CLASS Identifier (EXTENDS inheritedType)?
       ( IMPLEMENTS inheritedType (COMMA inheritedType)* )? block
   ;
 
@@ -91,7 +91,7 @@ ifBlock
   ;
 
 elseIfBlock
-  : ELSE IF LPAREN expression RPAREN blockOrStatement
+  : ELSE ifBlock
   ;
 
 elseBlock
@@ -171,7 +171,7 @@ typeDec
   | customTypes
   ;
 
-builtIntypesAllowingMethodInvocation
+builtInTypesAllowingMethodInvocation
   : MAP
   | DATE
   | STRING
@@ -200,7 +200,7 @@ functionInvocationConstruct
   ;
 
 functionInvocation
-  : ( (Identifier | builtIntypesAllowingMethodInvocation) DOT )* functionInvocationConstruct SEMICOLON?
+  : ( (Identifier | builtInTypesAllowingMethodInvocation) DOT )* functionInvocationConstruct SEMICOLON?
   ;
 
 varDec
