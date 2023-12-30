@@ -10,6 +10,7 @@
 
   <properties>
     <antlr.version>4.8-1</antlr.version>
+    <commons-text.version>1.10.0</commons-text.version>
     <junit-jupiter.version>5.6.2</junit-jupiter.version>
     <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -20,6 +21,11 @@
       <groupId>org.antlr</groupId>
       <artifactId>antlr4-runtime</artifactId>
       <version>${antlr.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>${commons-text.version}</version>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>

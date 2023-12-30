@@ -57,7 +57,7 @@ statement
   ;
 
 annotation
-  : AT Identifier (LPAREN statement RPAREN)?
+  : AT Identifier (LPAREN .*? RPAREN)?
   ;
 
 increment
@@ -146,9 +146,10 @@ primitivetypes
   | SOBJECT
   | DOUBLE
   | BOOLEAN
+  | DECIMAL
   ;
 
-buildInTypes
+builtInTypes
   : DATE
   ;
 
@@ -167,7 +168,7 @@ typeDec
   | setType
   | listOfMapsType
   | primitivetypes
-  | buildInTypes
+  | builtInTypes
   | customTypes
   ;
 
@@ -175,6 +176,8 @@ builtInTypesAllowingMethodInvocation
   : MAP
   | DATE
   | STRING
+  | DOUBLE
+  | DECIMAL
   ;
 
 constructor
@@ -186,35 +189,52 @@ returnType
   | typeDec
   ;
 
+globalOrPrivate
+  : GLOBAL
+  | PRIVATE
+  ;
+
 funcDec
-  : (GLOBAL | PRIVATE)? STATIC? returnType Identifier argsList block
+  : globalOrPrivate? STATIC? returnType Identifier argsList block
   ;
 
 argsList
   : LPAREN ( returnType Identifier ( COMMA returnType Identifier )* )? RPAREN
   ;
 
-functionInvocationConstruct
+functionInvocationConstruct0
   : Identifier LPAREN expressionList? RPAREN indexes?
-      (DOT Identifier LPAREN expressionList? RPAREN indexes?)* ( DOT identifierExpr )?
+  ;
+
+functionInvocationConstruct
+  : functionInvocationConstruct0 (DOT functionInvocationConstruct0)* ( DOT identifierExpr )?
+  ;
+
+functionInvocationObject
+  : Identifier
+  | builtInTypesAllowingMethodInvocation
   ;
 
 functionInvocation
-  : ( (Identifier | builtInTypesAllowingMethodInvocation) DOT )* functionInvocationConstruct SEMICOLON?
+  : ( functionInvocationObject DOT )* functionInvocationConstruct SEMICOLON?
   ;
 
 varDec
-  : GLOBAL typeDec Identifier LBRACE GET SET RBRACE              #getterSetterVarDec
-  | (GLOBAL | PRIVATE) FINAL? typeDec Identifier SEMICOLON                           #directVarDec
-  | (GLOBAL | PRIVATE) STATIC? FINAL? typeDec Identifier ASSIGN expression SEMICOLON #varDecWithInitilization
+  : GLOBAL typeDec Identifier LBRACE GET SET RBRACE                               #getterSetterVarDec
+  | globalOrPrivate FINAL? typeDec Identifier SEMICOLON                           #directVarDec
+  | globalOrPrivate STATIC? FINAL? typeDec Identifier ASSIGN expression SEMICOLON #varDecWithInitilization
   ;
 
 generalTypeInitializerExpression
-  : NEW (listType | mapType | setType | customTypes) LPAREN expressionList? RPAREN
+  : NEW typeDec LPAREN expressionList? RPAREN
   ;
 
 soql
   : LBRAC .*? RBRAC
+  ;
+
+mapKeyValue
+  : expression MAP_KEY_VALUE_OP expression
   ;
 
 expression
@@ -222,20 +242,17 @@ expression
   | BANG expression                                                                         #notExpression
   | increment                                                                               #incrementExpression
   | decrement                                                                               #decrementExpression
-  | expression op=( MUL | DIV | MOD | ADD | SUB ) expression                                #arithExpression
-  | expression op=( GE | LE | GT | LT ) expression                                          #compExpression
-  | expression op=( EQUAL | NOTEQUAL ) expression                                           #eqExpression
-  | expression AND expression                                                               #andExpression
-  | expression OR expression                                                                #orExpression
+  | expression
+      op=( MUL | DIV | MOD | ADD | SUB | GE | LE | GT | LT | EQUAL | NOTEQUAL | AND | OR)
+      expression                                                                            #arithLogiExpression
   | NumberLiteral                                                                           #numberExpression
   | StringLiteral                                                                           #stringExpression
   | functionInvocation                                                                      #functionInvocationExpression
   | generalTypeInitializerExpression                                                        #generalTypeInitializerExpressionLabel
   | generalTypeInitializerExpression (DOT functionInvocationConstruct)+                     #generalTypeInitializerAndMethodCallExpression
   | NEW (listType | setType) blockStart expression (COMMA expression)* blockEnd             #listTypeInitializePopulateExpression
-  | NEW mapType blockStart expression MAP_KEY_VALUE_OP expression
-      (COMMA expression MAP_KEY_VALUE_OP expression)* blockEnd                              #mapTypeInitializePopulateExpression
-  | NEW (primitivetypes | buildInTypes | customTypes) LBRAC RBRAC
+  | NEW mapType blockStart mapKeyValue (COMMA mapKeyValue)* blockEnd                        #mapTypeInitializePopulateExpression
+  | NEW (primitivetypes | builtInTypes | customTypes) LBRAC RBRAC
       blockStart expression (COMMA expression)* blockEnd                                    #arrayTypeInitializePopulateExpression
   | identifierExpr                                                                          #identifierExpression
   | soql                                                                                    #soqlExpression

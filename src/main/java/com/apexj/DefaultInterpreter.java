@@ -3,8 +3,10 @@ package com.apexj;
 import com.apexj.antlr4.AJParserBaseVisitor;
 import com.apexj.antlr4.AJParser;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   private final Set<String> imports = new HashSet<>();
@@ -13,6 +15,8 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   
   public String getGeneratedCode() {
     StringBuilder sb = new StringBuilder();
+    sb.append("package com.apexj;");
+    sb.append("\n\n");
     sb.append(String.join("\n", imports));
     
     boolean indent = false;
@@ -53,7 +57,7 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
     }
     
     classStm.append(" ");
-    classStm.append("class ").append(ctx.Identifier().toString());
+    classStm.append("class ").append(ctx.Identifier().getText());
     
     if (ctx.EXTENDS() != null) {
       classStm.append(" ");
@@ -87,10 +91,10 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   @Override
   public String visitInheritedType(AJParser.InheritedTypeContext ctx) {
     StringBuilder inheritedTypeBuilder = new StringBuilder();
-    inheritedTypeBuilder.append(ctx.Identifier(0));
+    inheritedTypeBuilder.append(ctx.Identifier(0).getText());
     
     for (TerminalNode identifier : ctx.Identifier().subList(1, ctx.Identifier().size())) {
-      inheritedTypeBuilder.append(".").append(identifier);
+      inheritedTypeBuilder.append(".").append(identifier.getText());
     }
     
     if (ctx.GT() != null) {
@@ -110,14 +114,14 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   public String visitIndexes(AJParser.IndexesContext ctx) {
     StringBuilder indexes = new StringBuilder();
     for (AJParser.ExpressionContext expr : ctx.expression()) {
-      indexes.append(String.format("[%s]", visit(expr)));
+      indexes.append(String.format(".get(%s)", visit(expr)));
     }
     return indexes.toString();
   }
   
   @Override
   public String visitIdentifierExpr(AJParser.IdentifierExprContext ctx) {
-    String expr = ctx.Identifier().toString();
+    String expr = ctx.Identifier().getText();
     
     if (ctx.indexes() != null) {
       expr += visit(ctx.indexes());
@@ -144,11 +148,7 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   
   @Override
   public String visitAnnotation(AJParser.AnnotationContext ctx) {
-    String annotation = "@" + ctx.Identifier();
-    if (ctx.statement() != null) {
-      annotation += String.format("(%s)", visit(ctx.statement()));
-    }
-    genParts.add(annotation);
+    genParts.add(ctx.getText());
     return null;
   }
   
@@ -203,10 +203,8 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   
   @Override
   public String visitCatchBlock(AJParser.CatchBlockContext ctx) {
-    genParts.add("catch");
-    if (ctx.argsList() != null) {
-      visit(ctx.argsList());
-    }
+    genParts.add(String.format("catch %s",
+        ctx.argsList() != null ? visit(ctx.argsList()) : ""));
     visit(ctx.blockOrStatement());
     return null;
   }
@@ -245,10 +243,15 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   @Override
   public String visitForListStatement(AJParser.ForListStatementContext ctx) {
     String forStm = "for ";
-    forStm += String.format("(%1$s : %2$s),", visit(ctx.assignmentLS()), visit(ctx.expression()));
+    forStm += String.format("(%1$s : %2$s)", visit(ctx.assignmentLS()), visit(ctx.expression()));
     genParts.add(forStm);
     visit(ctx.blockOrStatement());
     return null;
+  }
+  
+  @Override
+  public String visitCasting(AJParser.CastingContext ctx) {
+    return String.format("(%s)", visit(ctx.typeDec()));
   }
   
   @Override
@@ -257,6 +260,7 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
     if (ctx.returnType() != null) {
       asg += visit(ctx.returnType());
     }
+    asg += " ";
     asg += visit(ctx.identifierExpr());
     return asg;
   }
@@ -266,8 +270,7 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
     if (ctx.VOID() != null) {
       return "void";
     }
-    visit(ctx.typeDec());
-    return null;
+    return visit(ctx.typeDec());
   }
   
   @Override
@@ -278,12 +281,18 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
       return "String";
     } else if (ctx.INTEGER() != null) {
       return "Integer";
+    } else if (ctx.DECIMAL() != null) {
+      return "Double";
     }
     return ctx.getText();
   }
   
   @Override
-  public String visitBuildInTypes(AJParser.BuildInTypesContext ctx) {
+  public String visitBuiltInTypes(AJParser.BuiltInTypesContext ctx) {
+    if (ctx.DATE() != null) {
+      imports.add("import java.util.Date;");
+      return "Date";
+    }
     return ctx.getText();
   }
   
@@ -291,7 +300,7 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   public String visitCustomTypes(AJParser.CustomTypesContext ctx) {
     StringBuilder customTypes = new StringBuilder(ctx.Identifier(0).toString());
     for (TerminalNode identifier : ctx.Identifier().subList(1, ctx.Identifier().size())) {
-      customTypes.append(".").append(identifier);
+      customTypes.append(".").append(identifier.getText());
     }
     return customTypes.toString();
   }
@@ -321,15 +330,56 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   }
   
   @Override
+  public String visitBuiltInTypesAllowingMethodInvocation(AJParser.BuiltInTypesAllowingMethodInvocationContext ctx) {
+    if (ctx.DATE() != null) {
+      imports.add("import java.util.Date;");
+      return "Date";
+    } else if (ctx.MAP() != null) {
+      imports.add("import java.util.Map;");
+      return "Map";
+    } else if (ctx.STRING() != null) {
+      return "String";
+    } else if (ctx.DECIMAL() != null) {
+      return "Double";
+    }
+    return ctx.getText();
+  }
+  
+  @Override
   public String visitArgsList(AJParser.ArgsListContext ctx) {
-    if (ctx.typeDec().isEmpty()) {
+    if (ctx.returnType().isEmpty()) {
       return "()";
     }
     List<String> args = new ArrayList<>();
-    for (int i = 0; i < ctx.typeDec().size(); i++) {
-      args.add(visit(ctx.typeDec(i)) + " " + ctx.Identifier(i));
+    for (int i = 0; i < ctx.returnType().size(); i++) {
+      args.add(visit(ctx.returnType(i)) + " " + ctx.Identifier(i).getText());
     }
     return String.format("(%s)", String.join(", ", args));
+  }
+  
+  @Override
+  public String visitExpressionList(AJParser.ExpressionListContext ctx) {
+    return ctx.expression().stream().map(this::visit).collect(Collectors.joining(", "));
+  }
+  
+  @Override
+  public String visitFunctionInvocationConstruct0(AJParser.FunctionInvocationConstruct0Context ctx) {
+    return String.format("%1$s(%2$s)%3$s",
+        ctx.Identifier().getText(),
+        ctx.expressionList() != null ? visit(ctx.expressionList()) : "",
+        ctx.indexes() != null ? visit(ctx.indexes()) : "");
+  }
+  
+  @Override
+  public String visitFunctionInvocationConstruct(AJParser.FunctionInvocationConstructContext ctx) {
+    String funCont = ctx.functionInvocationConstruct0()
+        .stream().map(this::visit).collect(Collectors.joining("."));
+    if (ctx.identifierExpr() != null) {
+      funCont += ".";
+      funCont += visit(ctx.identifierExpr());
+    }
+    
+    return funCont;
   }
   
   @Override
@@ -353,11 +403,13 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
     String capitalizedVarId = varId.substring(0, 1).toUpperCase() + varId.substring(1);
     String genCode = String.format("private %1$s %2$s;", type, varId) +
         "\n\n" +
+        "  " +
         String.format("public %3$s get%1$s() {return %2$s;}",
             capitalizedVarId,
             varId,
             type) +
         "\n\n" +
+        "  " +
         String.format("public void set%1$s(%3$s %2$s) {this.%2$s = %2$s;}",
             capitalizedVarId,
             varId,
@@ -367,36 +419,120 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   }
   
   @Override
-  public String visitPrivateVarDec(AJParser.PrivateVarDecContext ctx) {
-    String type = visit(ctx.typeDec());
-    String varId = ctx.Identifier().toString();
-    genParts.add(String.format("private %1$s %2$s;", type, varId));
+  public String visitDirectVarDec(AJParser.DirectVarDecContext ctx) {
+    String directVar = visit(ctx.globalOrPrivate());
+    if (ctx.FINAL() != null) {
+      directVar += " ";
+      directVar += "final";
+    }
+    directVar += " ";
+    directVar += visit(ctx.typeDec());
+    directVar += " ";
+    directVar += ctx.Identifier().getText();
+    directVar += ";";
+    genParts.add(directVar);
     return null;
   }
   
   @Override
-  public String visitAddExpression(AJParser.AddExpressionContext ctx) {
-    AJParser.ExpressionContext left = ctx.expression(0);
-    AJParser.ExpressionContext right = ctx.expression(1);
-    return left.getText() + " + " + right.getText();
+  public String visitVarDecWithInitilization(AJParser.VarDecWithInitilizationContext ctx) {
+    String varWithIni = visit(ctx.globalOrPrivate());
+    if (ctx.STATIC() != null) {
+      varWithIni += " ";
+      varWithIni += "static";
+    }
+    if (ctx.FINAL() != null) {
+      varWithIni += " ";
+      varWithIni += "final";
+    }
+    varWithIni += " ";
+    varWithIni += visit(ctx.typeDec());
+    varWithIni += " ";
+    varWithIni += ctx.Identifier().getText();
+    varWithIni += " = ";
+    varWithIni += visit(ctx.expression());
+    varWithIni += ";";
+    genParts.add(varWithIni);
+    return null;
+  }
+  
+  @Override
+  public String visitGeneralTypeInitializerExpression(AJParser.GeneralTypeInitializerExpressionContext ctx) {
+    String type = visit(ctx.typeDec());
+    
+    if (type.startsWith("List")) {
+      imports.add("import java.util.ArrayList;");
+      type = type.replace("List", "ArrayList");
+    } else if (type.startsWith("Map")) {
+      imports.add("import java.util.HashMap;");
+      type = type.replace("Map", "HashMap");
+    } else if (type.startsWith("Set")) {
+      imports.add("import java.util.HashSet;");
+      type = type.replace("Set", "HashSet");
+    }
+    return String.format("new %1$s(%2$s)",
+        type,
+        ctx.expressionList() != null ? visit(ctx.expressionList()) : "");
+  }
+  
+  @Override
+  public String visitFunctionInvocationObject(AJParser.FunctionInvocationObjectContext ctx) {
+    if (ctx.Identifier() != null) {
+      return ctx.Identifier().getText();
+    }
+    return visit(ctx.builtInTypesAllowingMethodInvocation());
   }
   
   private String processFunInvocation(boolean isExpression, AJParser.FunctionInvocationContext ctx) {
-    String genCode;
-    if (ctx.Identifier().size() > 1) {
-      genCode = ctx.Identifier(0).toString() + "." + ctx.Identifier(1).toString();
-    } else {
-      genCode = ctx.Identifier(0).toString();
+    
+    
+    String callerObject = ctx.functionInvocationObject() != null ? ctx.functionInvocationObject()
+        .stream().map(this::visit).collect(Collectors.joining(".")) : "";
+    
+    String func = visit(ctx.functionInvocationConstruct());
+    
+    String funcInv = "";
+    
+    if (!callerObject.isEmpty()) {
+      funcInv = callerObject + ".";
+      
+      // Try converting the function to java if it's a Java class and we can convert easily.
+      // This is just an example. We will have a robust way to convert function later on.
+      switch (callerObject) {
+        case "Date":
+          if (func.equals("today()")) {
+            imports.add("import java.time.Instant;");
+            func = "from(Instant.now())";
+          }
+          break;
+        case "System":
+          if (func.startsWith("debug")) {
+            func = func.replace("debug", "out.println");
+          }
+          break;
+        case "String":
+          // Apex's String.join args sequence is just opposite to java's
+          if (func.startsWith("join")) {
+            AJParser.ExpressionListContext expressionListContext =
+                ctx.functionInvocationConstruct().functionInvocationConstruct0(0).expressionList();
+            func = String.format("join(%1$s, %2$s)",
+                visit(expressionListContext.expression(1)),
+                visit(expressionListContext.expression(0)));
+          }
+          break;
+      }
     }
-    String params = "";
-    if (ctx.expressionList() != null) {
-      params = ctx.expressionList().getText();
+    
+    funcInv += func;
+    
+    if (ctx.SEMICOLON() != null) {
+      funcInv += ";";
     }
-    genCode += String.format("(%1$s);", params);
+    
     if (isExpression) {
-      return genCode;
+      return funcInv;
     }
-    genParts.add(genCode);
+    genParts.add(funcInv);
     return null;
   }
   
@@ -411,40 +547,68 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   }
   
   @Override
-  public String visitTypeInitializerExpression(AJParser.TypeInitializerExpressionContext ctx) {
-    String type;
-    if (ctx.listType() != null) {
-      type = visit(ctx.listType());
-    } else {
-      type = visit(ctx.mapType());
-    }
-    return String.format("new %1$s()", type);
-  }
-  
-  @Override
   public String visitSoqlExpression(AJParser.SoqlExpressionContext ctx) {
     String entireExp = ctx.getText();
-    return entireExp.substring(1, entireExp.length() - 2);
+    return String.format("\"%s\"",
+        entireExp.substring(1, entireExp.length() - 2).replaceAll("\r\n\t", ""));
   }
   
   @Override
   public String visitAssignment(AJParser.AssignmentContext ctx) {
-    String genCode = "";
-    if (ctx.typeDec() != null) {
-      genCode = visit(ctx.typeDec()) + " ";
-    }
-    genCode += String.format("%1$s = %2$s;", ctx.Identifier(), visit(ctx.expression()));
+    String genCode = String.format("%1$s %3$s= %4$s%2$s;",
+        visit(ctx.assignmentLS()),
+        visit(ctx.expression()),
+        ctx.ADD() != null ? "+" : "",
+        ctx.casting() != null ? visit(ctx.casting()) : "");
+    
     genParts.add(genCode);
     return null;
   }
   
   @Override
-  public String visitFuncDec(AJParser.FuncDecContext ctx) {
-    String funStm = "";
+  public String visitEnumDec(AJParser.EnumDecContext ctx) {
+    StringBuilder enumStm = new StringBuilder();
     if (ctx.GLOBAL() != null) {
-      funStm = "public ";
+      enumStm.append("public");
     }
-    funStm += visit(ctx.typeDec()) + " " + ctx.Identifier().toString() + visit((ctx.argsList()));
+    enumStm.append(" ");
+    enumStm.append("enum");
+    enumStm.append(" ");
+    enumStm.append(ctx.Identifier(0).getText());
+    enumStm.append(" { ");
+    ListIterator<TerminalNode> identifierIterator = ctx.Identifier().listIterator();
+    identifierIterator.next(); // Skip the enum name
+    while (identifierIterator.hasNext()) {
+      TerminalNode identifier = identifierIterator.next();
+      enumStm.append(identifier.getText());
+      if (identifierIterator.hasNext()) {
+        enumStm.append(", ");
+      }
+    }
+    enumStm.append(" } ");
+    genParts.add(enumStm.toString());
+    return null;
+  }
+  
+  @Override
+  public String visitGlobalOrPrivate(AJParser.GlobalOrPrivateContext ctx) {
+    if (ctx.GLOBAL() != null) {
+      return "public";
+    }
+    return "private";
+  }
+  
+  @Override
+  public String visitFuncDec(AJParser.FuncDecContext ctx) {
+    String funStm = visit(ctx.globalOrPrivate());
+    
+    if (ctx.STATIC() != null) {
+      funStm += " ";
+      funStm += "static";
+    }
+    
+    funStm += " ";
+    funStm += visit(ctx.returnType()) + " " + ctx.Identifier().toString() + visit((ctx.argsList()));
     
     genParts.add(funStm);
     
@@ -454,8 +618,17 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   
   @Override
   public String visitReturnStm(AJParser.ReturnStmContext ctx) {
-    String soqlNormalized = visit(ctx.expression()).replaceAll("\n", "");
-    genParts.add(String.format("return \"%1$s\";", soqlNormalized));
+    String keyword = "";
+    if (ctx.RETURN() != null) {
+      keyword = "return";
+    } else if (ctx.UPDATE() != null) {
+      keyword = ctx.UPDATE().getText();
+    } else if (ctx.INSERT() != null) {
+      keyword = ctx.INSERT().getText();
+    } else {
+      throw new RuntimeException("Unrecognized keyword");
+    }
+    genParts.add(String.format("%1$s %2$s;", keyword, visit(ctx.expression())));
     return null;
   }
   
@@ -466,11 +639,73 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   
   @Override
   public String visitStringExpression(AJParser.StringExpressionContext ctx) {
-    return String.format("\"%1$s\"", ctx.getText().substring(1, ctx.getText().length() - 2));
+    String text = ctx.getText();
+    return String.format("\"%1$s\"", StringEscapeUtils.escapeJava(text.substring(1,
+        text.length() - 1)));
   }
   
   @Override
-  public String visitIdentifierExpression(AJParser.IdentifierExpressionContext ctx) {
-    return ctx.getText();
+  public String visitUnaryMinusExpression(AJParser.UnaryMinusExpressionContext ctx) {
+    return "-" + visit(ctx.expression());
+  }
+  
+  @Override
+  public String visitNotExpression(AJParser.NotExpressionContext ctx) {
+    return "!" + visit(ctx.expression());
+  }
+  
+  @Override
+  public String visitArithLogiExpression(AJParser.ArithLogiExpressionContext ctx) {
+    return String.format("%1$s %2$s %3$s", visit(ctx.expression(0)),
+        ctx.op.getText(), visit(ctx.expression(1)));
+  }
+  
+  @Override
+  public String visitGeneralTypeInitializerAndMethodCallExpression(AJParser.GeneralTypeInitializerAndMethodCallExpressionContext ctx) {
+    return visit(ctx.generalTypeInitializerExpression()) + "." +
+        ctx.functionInvocationConstruct().stream().map(this::visit).collect(Collectors.joining("."));
+  }
+  
+  @Override
+  public String visitListTypeInitializePopulateExpression(AJParser.ListTypeInitializePopulateExpressionContext ctx) {
+    String code;
+    if (ctx.listType() != null) {
+      imports.add("import java.util.List;");
+      code = "List.of";
+    } else {
+      imports.add("import java.util.Set;");
+      code = "Set.of";
+    }
+    code += String.format("(%s)", ctx.expression()
+        .stream().map(this::visit).collect(Collectors.joining(", ")));
+    return code;
+  }
+  
+  @Override
+  public String visitMapKeyValue(AJParser.MapKeyValueContext ctx) {
+    return visit(ctx.expression(0)) + ", " + visit(ctx.expression(1));
+  }
+  
+  @Override
+  public String visitMapTypeInitializePopulateExpression(AJParser.MapTypeInitializePopulateExpressionContext ctx) {
+    imports.add("import java.util.Map;");
+    return String.format("Map.of(%s)", ctx.mapKeyValue()
+        .stream().map(this::visit).collect(Collectors.joining(", ")));
+  }
+  
+  @Override
+  public String visitArrayTypeInitializePopulateExpression(AJParser.ArrayTypeInitializePopulateExpressionContext ctx) {
+    String type;
+    if (ctx.primitivetypes() != null) {
+      type = visit(ctx.primitivetypes());
+    } else if (ctx.builtInTypes() != null) {
+      type = visit(ctx.primitivetypes());
+    } else if (ctx.customTypes() != null) {
+      type = visit(ctx.customTypes());
+    } else {
+      throw new RuntimeException("Unrecognized type");
+    }
+    return String.format("new %1$s[]{%2$s}", type,
+        ctx.expression().stream().map(this::visit).collect(Collectors.joining(", ")));
   }
 }

@@ -74,12 +74,17 @@ STRING
   : 'string'
   | 'String'
   ;
-INTEGER : 'Integer';
+INTEGER
+  : 'Integer'
+  | 'integer'
+  ;
 SOBJECT
   : 'Sobject'
   | 'SObject'
+  | 'object'
   ;
 DOUBLE : 'Double';
+DECIMAL : 'Decimal';
 BOOLEAN
   : 'boolean'
   | 'Boolean'
