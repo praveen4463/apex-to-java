@@ -18,22 +18,23 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
     sb.append("package com.apexj;");
     sb.append("\n\n");
     sb.append(String.join("\n", imports));
+    sb.append("\n");
     
-    boolean indent = false;
+    int indentLevel = 0;
     for (String part : genParts) {
       if (part.equals("{")) {
-        indent = true;
+        indentLevel += 2;
         sb.append(" {");
         continue;
       } else if (part.equals("}")) {
-        indent = false;
-        sb.append("\n}");
+        indentLevel -= 2;
+        sb.append("\n");
+        sb.append(" ".repeat(Math.max(0, indentLevel)));
+        sb.append("}");
         continue;
       }
       sb.append("\n");
-      if (indent) {
-        sb.append("  ");
-      }
+      sb.append(" ".repeat(Math.max(0, indentLevel)));
       sb.append(part);
     }
     sb.append("\n");
