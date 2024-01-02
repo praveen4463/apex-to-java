@@ -116,7 +116,9 @@ assignmentLS
   ;
 
 assignment
-  : assignmentLS ADD? ASSIGN casting? expression SEMICOLON?
+  : assignmentLS ADD? ASSIGN casting? expression SEMICOLON? #generalAssignment
+  | assignmentLS ASSIGN casting?
+      NEW typeDec LPAREN assignment (COMMA assignment )* RPAREN SEMICOLON? #propAssignmentDuringInitializationExpressionLabel
   ;
 
 enumDec

@@ -300,9 +300,9 @@ global class ComprehensiveApexClass implements Database.Batchable<SObject>, Sche
         // Update the roll-up summary field on the parent records
         List<Account> parentsToUpdate = new List<Account>();
         for (Id parentId : parentCountMap.keySet()) {
-            Account parent = new Account([Id = parentId,
+            Account parent = new Account(Id = parentId,
                                          RollupSummaryField__c = parentCountMap.get(parentId)
-                                         ]);
+                                         );
             parentsToUpdate.add(parent);
         }
 

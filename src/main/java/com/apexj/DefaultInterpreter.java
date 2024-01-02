@@ -260,8 +260,8 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
     String asg = "";
     if (ctx.returnType() != null) {
       asg += visit(ctx.returnType());
+      asg += " ";
     }
-    asg += " ";
     asg += visit(ctx.identifierExpr());
     return asg;
   }
@@ -554,15 +554,39 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
         entireExp.substring(1, entireExp.length() - 2).replaceAll("\r\n\t", ""));
   }
   
-  @Override
-  public String visitAssignment(AJParser.AssignmentContext ctx) {
+  private String generalAssignment(AJParser.GeneralAssignmentContext ctx, boolean shouldReturn) {
     String genCode = String.format("%1$s %3$s= %4$s%2$s;",
         visit(ctx.assignmentLS()),
         visit(ctx.expression()),
         ctx.ADD() != null ? "+" : "",
         ctx.casting() != null ? visit(ctx.casting()) : "");
     
+    if (shouldReturn) {
+      return genCode;
+    }
     genParts.add(genCode);
+    return null;
+  }
+  
+  @Override
+  public String visitGeneralAssignment(AJParser.GeneralAssignmentContext ctx) {
+    generalAssignment(ctx, false);
+    return null;
+  }
+  
+  @Override
+  public String visitPropAssignmentDuringInitializationExpressionLabel(AJParser.PropAssignmentDuringInitializationExpressionLabelContext ctx) {
+    String declaration = String.format("%1$s = %2$snew %3$s();",
+        visit(ctx.assignmentLS()),
+        ctx.casting() != null ? visit(ctx.casting()) : "",
+        visit(ctx.typeDec()));
+    genParts.add(declaration);
+    String identifier = visit(ctx.assignmentLS().identifierExpr());
+    for (AJParser.AssignmentContext assign : ctx.assignment()) {
+      genParts.add(String.format("%1$s.%2$s",
+          identifier,
+          generalAssignment((AJParser.GeneralAssignmentContext)assign, true)));
+    }
     return null;
   }
   
