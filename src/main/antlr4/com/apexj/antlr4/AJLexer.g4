@@ -90,6 +90,8 @@ BOOLEAN
   | 'Boolean'
   ;
 DATE: 'Date';
+HTTP_REQUEST : 'HttpRequest';
+HTTP_RESPONSE : 'HttpResponse';
 ENUM: 'enum';
 
 NumberLiteral

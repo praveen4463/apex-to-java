@@ -153,6 +153,8 @@ primitivetypes
 
 builtInTypes
   : DATE
+  | HTTP_REQUEST
+  | HTTP_RESPONSE
   ;
 
 listOfMapsType

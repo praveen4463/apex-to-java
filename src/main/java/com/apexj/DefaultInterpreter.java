@@ -3,6 +3,7 @@ package com.apexj;
 import com.apexj.antlr4.AJParserBaseVisitor;
 import com.apexj.antlr4.AJParser;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.*;
@@ -293,15 +294,22 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
     if (ctx.DATE() != null) {
       imports.add("import java.util.Date;");
       return "Date";
+    } else if (ctx.HTTP_REQUEST() != null) {
+      imports.add("import java.net.http.HttpRequest;");
+      return "HttpRequest";
+    } else if (ctx.HTTP_RESPONSE() != null) {
+      imports.add("import java.net.http.HttpResponse;");
+      return "HttpResponse";
     }
     return ctx.getText();
   }
   
   @Override
   public String visitCustomTypes(AJParser.CustomTypesContext ctx) {
-    StringBuilder customTypes = new StringBuilder(ctx.Identifier(0).toString());
+    
+    StringBuilder customTypes = new StringBuilder(StringUtils.capitalize(ctx.Identifier(0).getText()));
     for (TerminalNode identifier : ctx.Identifier().subList(1, ctx.Identifier().size())) {
-      customTypes.append(".").append(identifier.getText());
+      customTypes.append(".").append(StringUtils.capitalize(identifier.getText()));
     }
     return customTypes.toString();
   }
