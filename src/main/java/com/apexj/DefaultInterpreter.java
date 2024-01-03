@@ -429,7 +429,10 @@ public class DefaultInterpreter extends AJParserBaseVisitor<String> {
   
   @Override
   public String visitDirectVarDec(AJParser.DirectVarDecContext ctx) {
-    String directVar = visit(ctx.globalOrPrivate());
+    String directVar = "";
+    if (ctx.globalOrPrivate() != null) {
+      directVar += visit(ctx.globalOrPrivate());
+    }
     if (ctx.FINAL() != null) {
       directVar += " ";
       directVar += "final";
