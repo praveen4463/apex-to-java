@@ -225,7 +225,7 @@ functionInvocation
 
 varDec
   : GLOBAL typeDec Identifier LBRACE GET SET RBRACE                               #getterSetterVarDec
-  | globalOrPrivate FINAL? typeDec Identifier SEMICOLON                           #directVarDec
+  | globalOrPrivate? FINAL? typeDec Identifier SEMICOLON                           #directVarDec
   | globalOrPrivate STATIC? FINAL? typeDec Identifier ASSIGN expression SEMICOLON #varDecWithInitilization
   ;
 
